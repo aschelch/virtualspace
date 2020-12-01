@@ -13,8 +13,8 @@ var h = window.innerHeight
 || document.documentElement.clientHeight
 || document.body.clientHeight;
 
-var x = w/2-50;
-var y = h/2-50;
+var x = w/2;
+var y = h/2;
 
 const peers = {}
 const videos = {}
@@ -36,11 +36,13 @@ navigator.mediaDevices.getUserMedia({
   })
 
   socket.on('user-connected', userId => {
+    console.log('user-connected', userId)
     connectToNewUser(userId, stream)
   })
 })
 
 socket.on('user-disconnected', userId => {
+  console.log('user-disconnected', userId)
   if (peers[userId]) peers[userId].close()
 })
 
@@ -55,6 +57,13 @@ socket.on('user-moved', (userId, position) => {
 
 myPeer.on('open', id => {
   socket.emit('join-room', ROOM_ID, id)
+
+  document.addEventListener('click', event => {
+      x = event.clientX;
+      y = event.clientY;
+      move(id, x, y);      
+  });
+
   document.onkeydown = function(e) {
     e = e || window.event;
     v = 20;
@@ -70,11 +79,7 @@ myPeer.on('open', id => {
     else if (e.keyCode == '39') {
       x+=v;
     }
-    myVideo.style.top = y + "px";
-    myVideo.style.left = x + "px";
-
-    socket.emit('move', ROOM_ID, id, {x, y});
-    computeVolume();
+    move(id, x, y);
   }
 })
 
@@ -98,7 +103,6 @@ function addVideoStream(video, stream) {
   video.srcObject = stream
   video.style.top = (h/2-50) + "px";
   video.style.left = (w/2-50) + "px";
-  //video.setAttribute('controls', true);
   video.addEventListener('loadedmetadata', () => {
     video.play()
   })
@@ -109,8 +113,16 @@ function addVideoStream(video, stream) {
 function computeVolume(){
   for (const id in positions) {
     distance = Math.sqrt(Math.pow(x-positions[id].x, 2) + Math.pow(y-positions[id].y, 2))
-    volume = Math.min(Math.max(-0.15*distance+100, 0), 100)/100
+    volume = Math.min(Math.max(-0.3*distance+150, 0), 100)/100
     videos[id].volume = volume
+    videos[id].style.border = 'rgba(50, 130, 184, '+volume+') 3px solid'
   }
   
+}
+
+function move(id, x, y){
+  myVideo.style.top = (y-50) + "px";
+  myVideo.style.left = (x-50) + "px";
+  socket.emit('move', ROOM_ID, id, {x, y});
+  computeVolume();
 }
