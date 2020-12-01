@@ -21,7 +21,11 @@ const videos = {}
 const positions = {}
 
 navigator.mediaDevices.getUserMedia({
-  video: true,
+  video: {
+      width: 320,
+      height: 180,
+      frameRate: 20
+  },
   audio: true
 }).then(stream => {
   addVideoStream(myVideo, stream)
